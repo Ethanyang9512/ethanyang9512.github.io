@@ -20,11 +20,9 @@ on:
     - cron: '17 22 * * *'
   workflow_dispatch:
 
-# sync 要推送提交（contents: write）；deploy 要部署 Pages（pages: write、id-token: write）。
-permissions:
-  contents: write
-  pages: write
-  id-token: write
+# 每个任务只拿自己要的权限（写在各任务里）：sync 要推送数据提交（contents: write）；build 只读仓库和 Pages 设置
+# （contents: read、pages: read）；deploy 要部署 Pages（pages: write、id-token: write）。这里整体默认什么都不给。
+permissions: {}
 
 # 同一时间最多一个在跑、一个在等：正在跑的不取消（cancel-in-progress: false）；已经有一个在等时又来一个，
 # 先前在等的那个被取消，只留最新的（默认的 queue: single）。在等的定时运行要是被推送顶掉，当天就不同步，第二天照常。
@@ -38,6 +36,8 @@ jobs:
     if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v7
         with:
@@ -47,7 +47,8 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: 24
-      - run: npm ci
+      # 依赖不跑安装脚本（唯一的依赖 marked 本来就没有）
+      - run: npm ci --ignore-scripts
       # 两个同步各自允许失败：失败的那个不写文件，另一个照常；最后一步再让这个任务标红。
       - name: 同步小宇宙节目页
         id: podcast
@@ -90,6 +91,9 @@ jobs:
     if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions:
+      contents: read
+      pages: read
     steps:
       - uses: actions/checkout@v7
         with:
@@ -100,7 +104,7 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: 24
-      - run: npm ci
+      - run: npm ci --ignore-scripts
       - run: npm test
       # 构建时从 GitHub 取各作品的源码包放进 downloads/（zip 不进仓库）。取不到的跳过：打印一行错误码，
       # 那件作品页上不放下载按钮，构建照常完成。
@@ -119,6 +123,9 @@ jobs:
     if: ${{ !cancelled() && needs.build.result == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
