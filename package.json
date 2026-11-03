@@ -1,0 +1,16 @@
+{
+  "name": "personal-site",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "node --test",
+    "build": "if [ -e dist ]; then /usr/bin/trash dist; fi && node build.mjs --out dist",
+    "sync": "node scripts/sync-podcast.mjs && node scripts/sync-releases.mjs"
+  },
+  "dependencies": {
+    "marked": "18.1.2"
+  }
+}

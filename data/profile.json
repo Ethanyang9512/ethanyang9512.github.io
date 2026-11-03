@@ -1,0 +1,20 @@
+{
+  "name": "Ethan",
+  "siteUrl": "https://ethanyang9512.github.io",
+  "tagline": "做了多年零售与供应链数据分析，现在在做 AI 工作流，业余做播客。",
+  "intro": "这里放我做的东西：两个开源的 AI 工具（一个给数据分析师，一个给个人播客创作者）、一个自用的微信 AI 助理，还有我的播客。",
+  "about": [
+    "我是 Ethan。做了多年零售与供应链数据分析，现在在做 AI 工作流，业余做播客。",
+    "我把平时和 AI 一起干活的做法整理成工具，开源在 GitHub 上，其中一部分技能也上架了 WorkBuddy。播客叫《西湖公园》，我在节目里署名弔导。",
+    "在 GitHub 和公众号「二手国王」能找到我。"
+  ],
+  "podcastIntro": "这是我业余做的播客，署名弔导。聊成长和选择、工作和日常，也聊一些说不清的情绪。",
+  "podcastAuthor": "弔导",
+  "links": [
+    { "label": "GitHub", "url": "https://github.com/Ethanyang9512", "text": "Ethanyang9512" },
+    { "label": "小宇宙", "url": "https://www.xiaoyuzhoufm.com/podcast/6a103e614c31a34a749047da", "text": "西湖公园" },
+    { "label": "公众号", "url": null, "text": "二手国王" }
+  ],
+  "xiaohongshu": null,
+  "license": "CC BY 4.0"
+}

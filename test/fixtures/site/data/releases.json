@@ -1,0 +1,19 @@
+{
+  "checkedAt": "2026-02-21T00:00:00.000Z",
+  "repos": {
+    "alpha-kit": {
+      "tag": "v1.2.0",
+      "name": "v1.2.0 夹具版本",
+      "publishedAt": "2026-02-20T08:00:00.000Z",
+      "zipUrl": "https://github.com/Ethanyang9512/alpha-kit/archive/refs/tags/v1.2.0.zip",
+      "zipName": "alpha-kit-1.2.0.zip"
+    },
+    "beta-studio": {
+      "tag": "v0.3.0",
+      "name": "v0.3.0 夹具版本",
+      "publishedAt": "2026-01-20T08:00:00.000Z",
+      "zipUrl": "https://github.com/Ethanyang9512/beta-studio/archive/refs/tags/v0.3.0.zip",
+      "zipName": "beta-studio-0.3.0.zip"
+    }
+  }
+}

@@ -1,0 +1,55 @@
+[
+  {
+    "slug": "alpha-kit",
+    "name": "Alpha Kit",
+    "nameZh": "夹具作品甲",
+    "summary": "夹具作品甲的一句话：帮人做一件事。",
+    "audience": "夹具作品甲适合的人。",
+    "highlights": ["夹具甲亮点一。", "夹具甲亮点二。"],
+    "repo": "alpha-kit",
+    "license": "MIT",
+    "docsLicense": "CC BY 4.0",
+    "install": {
+      "claudeCode": [
+        "/plugin marketplace add Ethanyang9512/alpha-kit",
+        "/plugin install fixture-alpha@fixture-skills"
+      ]
+    },
+    "workbuddy": {
+      "items": [
+        { "id": "os_fixture0000000001", "name": "夹具技能一", "type": "技能" },
+        { "id": "oe_fixture0000000002", "name": "夹具专家团", "type": "专家团" }
+      ]
+    },
+    "status": "open-source",
+    "visual": { "src": null, "alt": "夹具示意图甲" }
+  },
+  {
+    "slug": "beta-studio",
+    "name": "Beta Studio",
+    "nameZh": "夹具作品乙",
+    "summary": "夹具作品乙的一句话：帮人做另一件事。",
+    "audience": "夹具作品乙适合的人。",
+    "highlights": ["夹具乙亮点一。"],
+    "repo": "beta-studio",
+    "license": "MIT",
+    "install": null,
+    "workbuddy": null,
+    "status": "open-source",
+    "visual": { "src": "/assets/img/fixture-beta.svg", "alt": "夹具示意图乙", "caption": "夹具图注乙：说清这张图讲什么。" }
+  },
+  {
+    "slug": "gamma-bot",
+    "name": "Gamma Bot",
+    "nameZh": "夹具作品丙",
+    "summary": "夹具作品丙的一句话：自用的小助手。",
+    "audience": "夹具作品丙目前只有我自己在用。",
+    "highlights": ["夹具丙亮点一。"],
+    "repo": null,
+    "license": null,
+    "install": null,
+    "workbuddy": null,
+    "status": "private",
+    "visual": { "src": null, "alt": "夹具示意图丙" }
+  }
+]

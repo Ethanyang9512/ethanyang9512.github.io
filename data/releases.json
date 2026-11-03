@@ -1,0 +1,19 @@
+{
+  "checkedAt": "2026-11-02T15:29:11.582Z",
+  "repos": {
+    "ai-analyst-workbench": {
+      "tag": "v0.2.0",
+      "name": "v0.2.0：ethan- 系列技能 + 插件一键安装",
+      "publishedAt": "2026-10-22T08:52:38.000Z",
+      "zipUrl": "https://github.com/Ethanyang9512/ai-analyst-workbench/archive/refs/tags/v0.2.0.zip",
+      "zipName": "ai-analyst-workbench-0.2.0.zip"
+    },
+    "ai-creator-studio": {
+      "tag": "v0.1.0",
+      "name": "v0.1.0 首次公开发布",
+      "publishedAt": "2026-10-27T00:36:30.000Z",
+      "zipUrl": "https://github.com/Ethanyang9512/ai-creator-studio/archive/refs/tags/v0.1.0.zip",
+      "zipName": "ai-creator-studio-0.1.0.zip"
+    }
+  }
+}

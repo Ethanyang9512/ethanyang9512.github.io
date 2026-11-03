@@ -1,0 +1,32 @@
+{
+  "podcast": {
+    "pid": "fb0000000000000000000001",
+    "title": "夹具节目",
+    "url": "https://www.xiaoyuzhoufm.com/podcast/fb0000000000000000000001",
+    "episodeCount": 5,
+    "checkedAt": "2026-03-16T00:00:00.000Z"
+  },
+  "episodes": [
+    {
+      "eid": "fe0000000000000000000003",
+      "title": "Vol.03 夹具第三期 </script><b>注入</b> & \"引号\"",
+      "pubDate": "2026-03-15T12:00:00.000Z",
+      "duration": 1500,
+      "url": "https://www.xiaoyuzhoufm.com/episode/fe0000000000000000000003"
+    },
+    {
+      "eid": "fe0000000000000000000002",
+      "title": "Vol.02 夹具第二期",
+      "pubDate": "2026-02-15T17:30:00.000Z",
+      "duration": 1800,
+      "url": "https://www.xiaoyuzhoufm.com/episode/fe0000000000000000000002"
+    },
+    {
+      "eid": "fe0000000000000000000001",
+      "title": "Vol.01 夹具第一期 [上]",
+      "pubDate": "2026-01-15T12:00:00.000Z",
+      "duration": 3700,
+      "url": "https://www.xiaoyuzhoufm.com/episode/fe0000000000000000000001"
+    }
+  ]
+}

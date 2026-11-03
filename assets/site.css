@@ -1,0 +1,1013 @@
+/* ==========================================================================
+   Ethan · 全站样式：瑞士风格的网格版式（设计变量、部件、各页版式）
+   顺序：中文标点字体 → 设计变量 → 基础 → 断行 → 容器与网格 → 通用部件 → 页头页脚 → 区块开头
+         → 首页（首屏、作品、播客通栏、最近更新、关于）→ 栏目页页头 → 作品列表 → 作品页
+         → 播客页 → 关于、404、博客 → 平板 → 电脑 → 宽屏的区块标题 → 动效退让
+   规矩：整页只有一个高亮色（--accent），其余黑白灰；直角；线一律 1px；不用阴影；不加载任何外站资源。
+   招牌：红色方块。它只标记“现在 / 最新”：名字的句点、最新一期、最近一次更新、时长图里的最新一期。
+   版式：12 栏网格；电脑上左 3 栏是“索引栏”（区块编号和标题），右 9 栏是内容。手机上重排成单栏，不缩小。
+   ========================================================================== */
+
+/* ---------- 中文标点字体：只管 “ ” ‘ ’ · — … 这几个字符 ----------
+   Helvetica 在前面，这几个字符落到它的窄字形上：引号紧贴汉字，间隔号小得几乎看不见。
+   这里把它们交给本机的中文字体。local() 只读本机已装的字体，不下载、不发请求；要写字体的 PostScript 名或全名，
+   只写 "PingFang SC" 这样的字体族名找不到（Chrome 实测）。每个字重一条（常规 400、中等 500、半粗 600），
+   免得粗体被合成。哪个都没装，就退回 Helvetica，和以前一样。 */
+@font-face {
+  font-family: "CJK Punct";
+  font-weight: 400;
+  src: local("PingFangSC-Regular"), local("HiraginoSansGB-W3"), local("Microsoft YaHei"),
+       local("NotoSansCJKsc-Regular"), local("Noto Sans CJK SC Regular"), local("SourceHanSansSC-Regular");
+  unicode-range: U+2018-2019, U+201C-201D, U+00B7, U+2014, U+2026;
+}
+@font-face {
+  font-family: "CJK Punct";
+  font-weight: 500;
+  src: local("PingFangSC-Medium"), local("HiraginoSansGB-W3"), local("Microsoft YaHei"),
+       local("NotoSansCJKsc-Medium"), local("Noto Sans CJK SC Medium"), local("SourceHanSansSC-Medium");
+  unicode-range: U+2018-2019, U+201C-201D, U+00B7, U+2014, U+2026;
+}
+@font-face {
+  font-family: "CJK Punct";
+  font-weight: 600;
+  src: local("PingFangSC-Semibold"), local("HiraginoSansGB-W6"), local("Microsoft YaHei Bold"),
+       local("NotoSansCJKsc-Bold"), local("Noto Sans CJK SC Bold"), local("SourceHanSansSC-Bold");
+  unicode-range: U+2018-2019, U+201C-201D, U+00B7, U+2014, U+2026;
+}
+
+/* ---------- 设计变量（以手机为基准，平板和电脑在文件末尾覆盖） ---------- */
+:root {
+  color-scheme: light;
+
+  /* 颜色（对比度都按 WCAG 公式算过，正文和元信息在纸底上最低 5.1:1） */
+  --paper: #fafaf8;        /* 页面底 */
+  --paper-2: #efefec;      /* 行内代码的底（不放大段文字） */
+  --ink: #0a0a0a;          /* 标题、正文、区块顶线、入口按钮底、代码块底 */
+  --ink-2: #4a4a4a;        /* 次要文字：导语、说明 */
+  --ink-3: #6b6b6b;        /* 元信息：编号、日期、类型、标签、许可行 */
+  --line: #d6d6d3;         /* 条目之间的 1px 细线（不用于文字） */
+  --rule-link: #b4b4b0;    /* 单集标题常驻下划线的颜色（旁边还有 ↗），悬停时变成文字色；不用于文字 */
+  --accent: #d52b1e;       /* 全站唯一的高亮色：红色方块、按钮悬停底色、焦点框 */
+  --on-accent: #ffffff;    /* 红底上的字 */
+  --band: #0a0a0a;         /* 播客通栏的底 */
+  --band-ink: #fafaf8;     /* 通栏上的标题和正文 */
+  --band-ink-2: #c4c4c1;   /* 通栏上的次要文字 */
+  --band-ink-3: #9a9a97;   /* 通栏上的元信息 */
+  --band-line: #3a3a38;    /* 通栏上的细线（不用于文字） */
+  --qr-paper: #ffffff;     /* 二维码四周的留白底 */
+
+  /* 字体：拉丁字母和数字走 Helvetica，中文走系统黑体，几个中文标点走 "CJK Punct"（见文件开头）；等宽只给数字类（日期、版本号、条数） */
+  --font-sans: "CJK Punct", "Helvetica Neue", Helvetica, Arial, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+  --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+
+  /* 字号阶梯，每种角色一个字号。手机：14 / 16 / 20 / 24 / 32 / 48 / 名字 */
+  --fs-meta: 14px;         /* 编号、日期、类型、标签、许可行（全站唯一的小字号） */
+  --fs-body: 16px;         /* 正文、导航、按钮 */
+  --fs-item: 20px;         /* 列表条目、一句话导语、获取方式的标题 */
+  --fs-intro: 20px;        /* 首屏一句话介绍、作品中文名 */
+  --fs-name: 24px;         /* 作品名、节目名、文章里的小标题 */
+  --fs-title: 32px;        /* 区块标题、最新一期标题、文章标题 */
+  --fs-page: 48px;         /* 栏目页和作品页的大标题 */
+  --fs-display: calc((100vw - 2 * var(--page-pad)) / 2.75); /* 首屏 Ethan：手机上铺满版心 */
+
+  /* 行高 */
+  --lh-display: .8;
+  --lh-page: 1.05;
+  --lh-title: 1.3;
+  --lh-intro: 1.6;
+  --lh-text: 1.8;
+  --lh-meta: 1.5;
+
+  /* 间距刻度（8px 基数） */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 24px;
+  --sp-6: 32px;
+  --sp-7: 48px;
+  --sp-8: 64px;
+  --sp-9: 96px;
+  --sp-10: 128px;
+  --section-space: var(--sp-9);   /* 区块之间：手机 96，电脑 128 */
+  --band-space: var(--sp-8);      /* 黑色通栏的上下内边距：手机 64，电脑 96 */
+
+  /* 版心与网格 */
+  --container: 1200px;
+  --page-pad: 20px;
+  --gutter: 16px;
+  --header-h: 56px;
+  --measure: 36em;         /* 正文一行的最大宽度：电脑约 36 字 */
+
+  /* 红色方块 */
+  --square-s: 6px;         /* 页头、页脚署名后的小方块 */
+  --square-m: 10px;        /* 条目前的定位方块 */
+  --square-gap: 8px;       /* 方块和文字之间 */
+
+  /* 动效 */
+  --dur: .16s;
+  --ease: cubic-bezier(.2, 0, .38, .9);
+}
+
+/* ---------- 基础 ---------- */
+*, *::before, *::after { box-sizing: border-box; }
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  scroll-behavior: smooth;
+}
+body {
+  margin: 0;
+  min-height: 100vh;               /* 内容短的页（404、关于）页脚也贴在屏幕底部 */
+  display: flex;
+  flex-direction: column;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: var(--fs-body);
+  font-weight: 400;
+  line-height: var(--lh-text);
+  font-variant-numeric: tabular-nums;
+  line-break: strict;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+h1, h2, h3, p, ol, ul, dl, dd, figure, pre, blockquote { margin: 0; padding: 0; }
+ol, ul { list-style: none; }
+h1, h2, h3 { font-weight: 500; }
+a { color: inherit; text-decoration: none; }
+img, svg { display: block; max-width: 100%; }
+img { height: auto; }
+main { flex: 1 0 auto; }
+::selection { background: var(--ink); color: var(--paper); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+/* 页内跳转后，目标上方留一点空 */
+[id] { scroll-margin-top: var(--sp-4); }
+
+/* 跳到正文：平时移出屏幕，键盘聚焦时出现 */
+.skip-link {
+  position: absolute;
+  left: var(--page-pad);
+  top: var(--sp-2);
+  z-index: 10;
+  padding: var(--sp-2) var(--sp-4);
+  background: var(--ink);
+  color: var(--paper);
+  transform: translateY(-200%);
+}
+.skip-link:focus-visible { transform: none; }
+
+/* ---------- 断行（中文排版规则写在样式里；模板里不手写不换行的小段） ----------
+   标题和条目（多半由数据生成）：只在标点和空格处断，实在放不下才任意断，几行之间长短均衡；
+   行首的《「（不缩进，左边才齐。正文段落：避免最后一行只剩一个字。标点不落在行首靠 body 的 line-break: strict。
+   少数不该拆开的词（“一个”“小红书”“GitHub 上”这类）由生成器按词表包上 .nobr，整个挪到下一行。 */
+.nobr { white-space: nowrap; }
+h1, h2, h3,
+.hero__intro,
+.work__name, .work__zh,
+.podcast__ep-title, .podcast__name,
+.row__label, .way__label, .way__title,
+.about__lead, .contacts dd {
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  text-wrap: balance;
+  text-spacing-trim: trim-start;
+}
+p, li, dd, figcaption { text-wrap: pretty; text-spacing-trim: trim-start; }
+.hero__intro { word-break: normal; } /* 分句本身较长，按字断更稳 */
+/* 单集标题和列表标题不用 balance：balance 会把间隔号“·”挤到下一行行首（Chrome 实测），pretty 不会 */
+.row__label, .podcast__ep-title { text-wrap: pretty; }
+/* 由短分句组成的短段落（关于、节目简介、收听提示、安装说明、许可行）：也只在标点和空格处断，
+   一个分句不拆到两行。长段说明（作品介绍）分句太长，这样断会参差不齐，仍按字断 */
+.about__text p, .podcast__desc, .listen .lead, .listen__tips li,
+.way-note, .qr__caption, .masthead__facts, .masthead__note, .footer__license {
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+/* ---------- 容器与网格 ---------- */
+.wrap {
+  width: 100%;
+  max-width: calc(var(--container) + 2 * var(--page-pad));
+  margin-inline: auto;
+  padding-inline: var(--page-pad);
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  column-gap: var(--gutter);
+}
+.grid > * { grid-column: 1 / -1; min-width: 0; }
+
+/* ---------- 通用部件 ---------- */
+/* 红色方块：全站唯一的高亮色只以这个直角方块出现 */
+.square {
+  display: inline-block;
+  flex: none;
+  width: var(--square-m);
+  height: var(--square-m);
+  background: var(--accent);
+}
+
+/* 箭头：站内 →，站外 ↗，下载 ↓，返回 ←（内联 SVG，线宽固定 1.5px） */
+.icon {
+  display: inline-block;
+  flex: none;
+  width: .8em;
+  height: .8em;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: square;
+  vertical-align: -.04em;
+  transition: transform var(--dur) var(--ease);
+}
+
+/* 元信息：小号灰字（编号、日期、类型、标签、说明行）。数字类（.num、日期）换等宽 */
+.meta, .section__num, .catalogue__index, .row__when, .row__note,
+.masthead__eyebrow, .masthead__facts, .license, .footer__license, .dotplot, .qr__caption {
+  font-size: var(--fs-meta);
+  line-height: var(--lh-meta);
+  color: var(--ink-3);
+}
+.num, time { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.sep { margin-inline: .11em; color: var(--ink-3); }   /* 两边已有一个空格（约 .28em），再加中文间隔号自带的左右空白，合起来约半个字 */
+
+/* 下划线（全站一种：1px，悬停和聚焦时变成文字色）。
+   悬停才出现：文字链接、作品名、列表标题、获取方式、导航。
+   常驻：单集标题（它就是“听”的按钮）和句中链接，一眼看得出能点 */
+.text-link, .work__name-text, .row__label, .way__label, .way__file, .site-nav a,
+.ep-link__text, .inline-link, .prose a {
+  text-decoration-line: underline;
+  text-decoration-color: transparent;
+  text-decoration-thickness: 1px;
+  text-underline-offset: .25em;
+  transition: text-decoration-color var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+.ep-link__text, .ep-link .row__label { text-decoration-color: var(--rule-link); }
+.inline-link, .prose a { text-decoration-color: var(--ink-3); }   /* 正文里的链接：下划线是唯一提示，要看得清 */
+.masthead--band .inline-link { text-decoration-color: var(--rule-link); }
+.inline-link { white-space: nowrap; }
+.text-link:hover, .text-link:focus-visible,
+.work__link:hover .work__name-text, .work__link:focus-visible .work__name-text,
+.row__link:hover .row__label, .row__link:focus-visible .row__label,
+.way__action:hover .way__label, .way__action:focus-visible .way__label,
+.way__action:hover .way__file, .way__action:focus-visible .way__file,
+.ep-link:hover .ep-link__text, .ep-link:focus-visible .ep-link__text,
+.inline-link:hover, .inline-link:focus-visible,
+.prose a:hover, .prose a:focus-visible { text-decoration-color: currentColor; }
+
+/* 图标在悬停和聚焦时顺着箭头方向挪 3px */
+a:hover .icon--arrow, a:focus-visible .icon--arrow { transform: translateX(3px); }
+a:hover .icon--external, a:focus-visible .icon--external { transform: translate(3px, -3px); }
+a:hover .icon--download, a:focus-visible .icon--download,
+a:hover .icon--down, a:focus-visible .icon--down { transform: translateY(3px); }
+a:hover .icon--back, a:focus-visible .icon--back { transform: translateX(-3px); }
+
+/* 文字链接：图标跟在字后面，点按高度不小于 44px */
+.text-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-height: 44px;
+  text-underline-offset: .3em;
+}
+
+/* 方框按钮：悬停和聚焦时底色变成高亮红 */
+.button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-3);
+  min-height: 52px;
+  padding-inline: var(--sp-5);
+  border: 1px solid currentColor;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: background-color var(--dur) var(--ease), border-color var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+.button:hover,
+.button:focus-visible {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+}
+
+/* 规格表：一行一项，标签在左、数值在右，行间 1px 细线 */
+.spec { font-size: var(--fs-meta); line-height: var(--lh-meta); }
+.spec div {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--sp-4);
+  padding-block: var(--sp-2);
+  border-bottom: 1px solid var(--line);
+}
+.spec div:first-child { border-top: 1px solid var(--line); }
+.spec dt { color: var(--ink-3); white-space: nowrap; }
+.spec dd { color: var(--ink); text-align: right; }
+
+/* 联系方式：名称在左（小字），内容在右 */
+.contacts div {
+  display: grid;
+  grid-template-columns: 5.5em minmax(0, 1fr);
+  align-items: center;
+  column-gap: var(--sp-4);
+  min-height: 48px;
+  border-bottom: 1px solid var(--line);
+}
+.contacts div:first-child { border-top: 1px solid var(--line); }
+.contacts dt { font-size: var(--fs-meta); color: var(--ink-3); }
+.contacts dd { font-weight: 500; }
+
+/* 二维码：扫出来是节目主页。白边 16px，大于码边长的 10%；不改色、不变形、不加圆角 */
+.qr { display: none; }   /* 手机上扫不了自己的屏幕，只在平板和电脑上显示 */
+.qr__box {
+  display: inline-block;
+  padding: var(--sp-4);
+  background: var(--qr-paper);
+  vertical-align: top;
+}
+.qr__box img { width: 140px; height: 140px; }
+.qr__caption { margin-top: var(--sp-3); color: var(--band-ink-3); }
+
+/* 列表的一行（最近更新、全部单集、文章）：一行小号元信息，一行标题；整行可点（标题的链接铺满整行） */
+.row {
+  position: relative;
+  min-height: 44px;                  /* 第一行不留上边距，也要够 44px 的点按高度 */
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: var(--sp-4);
+  row-gap: var(--sp-1);
+  align-items: baseline;
+  padding-block: var(--sp-4);
+  border-top: 1px solid var(--line);
+}
+.row:first-child { padding-top: 0; border-top: 0; }
+.row__when {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--square-gap);
+}
+.row__marker { display: none; }
+.row--latest .row__marker { display: inline-block; }
+.row__title {
+  grid-column: 1 / -1;
+  font-size: var(--fs-item);
+  line-height: var(--lh-title);
+  font-weight: 500;
+}
+.row__link {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-4);
+}
+.row__link::after { content: ""; position: absolute; inset: 0; }   /* 点按范围铺满整行 */
+.row__link .icon { width: .7em; height: .7em; }
+.row__summary { grid-column: 1 / -1; max-width: var(--measure); color: var(--ink-2); }
+
+/* 单集时长图：每期一个方块，按期排列，最新一期是红方块 */
+.dotplot__caption,
+.dotplot__axis { display: flex; justify-content: space-between; gap: var(--sp-4); }
+.dotplot__axis span:last-child { text-align: right; }
+.dotplot__axis time { display: block; }   /* 日期在说明下面另起一行 */
+.dotplot__svg { width: 100%; height: auto; margin-block: var(--sp-4) var(--sp-2); overflow: visible; }
+.dotplot__base,
+.dotplot__stems { stroke-width: 1; vector-effect: non-scaling-stroke; }   /* 图放多大，线都是 1px */
+.dotplot__base { stroke: var(--line); }
+.dotplot__stems { stroke: var(--ink-3); }
+.dotplot__dots { fill: var(--ink-2); }
+.dotplot__dots .dotplot__latest { fill: var(--accent); }
+.dotplot__range { margin-top: var(--sp-1); color: var(--ink-2); }   /* 图上没有刻度：最短、最长几分钟写在图注下面 */
+.dotplot .sep { color: inherit; }
+
+/* ---------- 页头 ---------- */
+.site-header { border-bottom: 1px solid var(--line); }
+.site-header__inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  min-height: var(--header-h);
+}
+.site-mark,
+.footer__mark {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 2px;
+  font-weight: 600;
+}
+.site-mark { line-height: 44px; }
+.site-mark .square,
+.footer__mark .square { width: var(--square-s); height: var(--square-s); }
+.site-nav ul { display: flex; }
+.site-nav a {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding-inline: var(--sp-2);
+  color: var(--ink-2);
+  font-weight: 500;
+  white-space: nowrap;
+  text-underline-offset: .45em;
+}
+.site-nav li:last-child a { padding-right: 0; }
+.site-nav a:hover,
+.site-nav a:focus-visible,
+.site-nav a[aria-current] { color: var(--ink); text-decoration-color: currentColor; }
+
+/* ---------- 页脚 ---------- */
+.footer__base {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  padding-block: var(--sp-5) var(--sp-7);
+  border-top: 1px solid var(--line);
+}
+
+/* ---------- 区块开头（全站统一：1px 黑线 + 编号 + 区块标题） ---------- */
+.section { padding-bottom: var(--section-space); }
+.section__grid {
+  border-top: 1px solid var(--ink);
+  padding-top: var(--sp-5);
+  row-gap: var(--sp-7);
+}
+.section__head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-4);
+}
+.section__title {
+  font-size: var(--fs-title);
+  line-height: var(--lh-title);
+  white-space: nowrap;               /* 区块标题都是几个字的短词，任何宽度都不折行 */
+}
+
+/* ---------- 首页 · 首屏 ---------- */
+.hero { padding-top: var(--sp-7); padding-bottom: var(--section-space); }
+.hero__name {
+  font-size: var(--fs-display);
+  line-height: var(--lh-display);
+  font-weight: 500;
+  letter-spacing: -.045em;          /* 只用于这一个拉丁字大标题 */
+  margin-left: -.07em;              /* 抵消字母 E 自带的左侧空白，让竖笔落在版心左线上 */
+  white-space: nowrap;
+}
+.hero__name .square {
+  width: .2em;
+  height: .2em;
+  margin-left: .04em;
+}
+.hero__body {
+  margin-top: var(--sp-6);
+  padding-top: var(--sp-5);
+  border-top: 1px solid var(--ink);
+  row-gap: var(--sp-6);
+}
+.hero__intro {
+  font-size: var(--fs-intro);
+  line-height: var(--lh-intro);
+  font-weight: 500;
+}
+.hero__clause { display: block; }   /* 一句话介绍按分句成行 */
+.hero__lead {
+  margin-top: var(--sp-4);
+  max-width: var(--measure);
+  color: var(--ink-2);
+}
+.hero__entries {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sp-2);
+  counter-reset: entry;
+}
+.entry {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  min-height: 52px;
+  padding-inline: var(--sp-4);
+  background: var(--ink);
+  color: var(--paper);
+  font-weight: 500;
+  white-space: nowrap;
+  transition: background-color var(--dur) var(--ease);
+}
+.entry::before {                     /* 入口编号 01、02：和下面各区块的编号是一套 */
+  counter-increment: entry;
+  content: counter(entry, decimal-leading-zero);
+  font-family: var(--font-mono);
+  font-size: var(--fs-meta);
+  color: var(--band-ink-3);
+  transition: color var(--dur) var(--ease);
+}
+.entry .icon { margin-left: auto; }
+.entry:hover,
+.entry:focus-visible { background: var(--accent); }
+.entry:hover::before,
+.entry:focus-visible::before { color: var(--on-accent); }
+
+/* ---------- 首页 · 01 作品（作品列表页共用） ---------- */
+.work-list .work + .work {
+  margin-top: var(--sp-5);
+  padding-top: var(--sp-5);
+  border-top: 1px solid var(--line);
+}
+.work { display: grid; row-gap: var(--sp-4); }
+.work__link { display: block; }
+.work__name {
+  font-size: var(--fs-name);
+  line-height: var(--lh-title);
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-3);
+}
+.work__name .icon { width: .7em; height: .7em; }
+.work__name-text { text-underline-offset: .2em; }
+.work__zh { margin-top: var(--sp-1); font-weight: 500; }
+.work__desc {
+  margin-top: var(--sp-3);
+  max-width: var(--measure);
+  color: var(--ink-2);
+}
+.work__aside { display: grid; justify-items: start; row-gap: var(--sp-2); }
+.work__aside .spec { justify-self: stretch; }
+
+/* ---------- 首页 · 02 播客（黑色通栏） ---------- */
+.section--band {
+  background: var(--band);
+  color: var(--band-ink);
+  padding-block: var(--band-space);
+}
+.section--band + .section { padding-top: var(--band-space); }
+.section--band .section__grid { border-top-color: var(--band-ink); }
+.section--band .meta,
+.section--band .section__num { color: var(--band-ink-3); }
+.section--band .ep-link__text { text-decoration-color: var(--band-ink-3); }
+.section--band .dotplot { color: var(--band-ink-3); }
+.section--band .dotplot__base { stroke: var(--band-line); }
+.section--band .dotplot__stems { stroke: var(--band-ink-3); }
+.section--band .dotplot__dots { fill: var(--band-ink-2); }
+.section--band .dotplot__range { color: var(--band-ink-2); }
+.podcast__body { display: grid; row-gap: var(--sp-5); }
+.podcast__eyebrow {
+  display: flex;
+  align-items: center;
+  gap: var(--square-gap);
+  font-size: var(--fs-meta);
+  line-height: var(--lh-meta);
+  color: var(--band-ink-2);          /* 比其他元信息亮一级：它是这一块的入口 */
+}
+.podcast__ep-title {
+  margin-top: var(--sp-3);
+  font-size: var(--fs-title);
+  line-height: var(--lh-title);
+}
+.podcast__ep-title a { display: inline-block; min-height: 44px; }
+.podcast__ep-title .ep-link__text { text-underline-offset: .2em; }
+.podcast__ep-title .icon { width: .6em; height: .6em; margin-left: .2em; stroke-width: 2; vertical-align: .02em; }
+.podcast__ep-meta {
+  margin-top: var(--sp-2);
+  display: flex;
+  gap: var(--sp-4);
+}
+.podcast__actions {
+  margin-top: var(--sp-6);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-3) var(--sp-5);
+}
+.podcast__show {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr);   /* 手机封面 120px：原图 480px，不超过显示尺寸的 4 倍 */
+  column-gap: var(--sp-4);
+  row-gap: var(--sp-4);
+  align-items: center;
+  padding-top: var(--sp-5);
+  border-top: 1px solid var(--band-line);
+}
+.podcast__cover { width: 100%; }
+.podcast__name {
+  font-size: var(--fs-name);
+  line-height: var(--lh-title);
+}
+.podcast__host { margin-top: var(--sp-1); }
+.podcast__desc {
+  grid-column: 1 / -1;
+  max-width: var(--measure);
+  color: var(--band-ink-2);
+}
+
+/* ---------- 首页 · 03 最近更新、04 关于 ---------- */
+.about__lead {
+  font-size: var(--fs-item);
+  line-height: var(--lh-intro);
+  font-weight: 500;
+}
+.about__lead + .contacts { margin-top: var(--sp-5); }
+
+/* ---------- 栏目页和作品页的页头（和首屏同一个结构：大标题、黑线、索引栏和内容栏） ---------- */
+.masthead { padding-top: var(--sp-7); padding-bottom: var(--section-space); }
+.masthead__eyebrow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 var(--sp-4);
+  margin-bottom: var(--sp-3);
+}
+.masthead__eyebrow .text-link { color: var(--ink); }
+.masthead__title {
+  font-size: var(--fs-page);
+  line-height: var(--lh-page);
+  font-weight: 500;
+}
+.masthead__title[lang="en"] { letter-spacing: -.02em; }   /* 只收紧拉丁字的大标题，中文不用负字距 */
+.masthead__sub {
+  margin-top: var(--sp-3);
+  font-size: var(--fs-intro);
+  line-height: var(--lh-intro);
+  font-weight: 500;
+}
+.masthead__body {
+  margin-top: var(--sp-6);
+  padding-top: var(--sp-5);
+  border-top: 1px solid var(--ink);
+  row-gap: var(--sp-6);
+}
+.lead {
+  max-width: var(--measure);
+  font-size: var(--fs-item);
+  line-height: var(--lh-intro);
+}
+
+/* ---------- 作品列表页 ---------- */
+.catalogue__item {
+  padding-top: var(--sp-5);
+  padding-bottom: var(--sp-9);
+  border-top: 1px solid var(--ink);
+  row-gap: var(--sp-3);
+}
+.masthead--works,
+.masthead--blog { padding-bottom: var(--sp-8); }   /* 页头只有一行数字，下面不留整段区块间距 */
+.masthead--works .masthead__body { row-gap: var(--sp-3); }   /* 数字下面紧跟一句 WorkBuddy 是什么 */
+.masthead__note { max-width: var(--measure); color: var(--ink-2); }
+
+/* ---------- 作品页 ---------- */
+.work-page__facts { display: grid; justify-items: start; row-gap: var(--sp-2); }
+.work-page__facts .spec { justify-self: stretch; }
+.work-visual img { width: 100%; max-width: 600px; }
+/* 滑动容器不比图宽：宽屏上它本来比 600px 的图宽，键盘聚焦时的红框就会框住一片空白 */
+.work-visual__scroll { max-width: 600px; }
+/* 手机上示意图放进能左右滑动的容器，图按最小宽度显示，让图里最小的字不小于 14px：这几张图的画布都是 600 宽、
+   最小字 22，22 × 382 / 600 ≈ 14px。视口不窄于 422px（382 加两边各 20px 的页边）时容器自己就放得下，
+   图照常撑满容器，不用滑动，提示也不显示 */
+.work-visual__hint {
+  display: none;
+  margin-top: var(--sp-2);
+  font-size: var(--fs-meta);
+  line-height: var(--lh-meta);
+  color: var(--ink-3);
+}
+@media (max-width: 421.98px) {
+  .work-visual__scroll { overflow-x: auto; }
+  .work-visual__scroll img { min-width: 382px; }
+  .work-visual__hint { display: block; }
+}
+.work-visual__caption { margin-top: var(--sp-3); max-width: var(--measure); color: var(--ink-2); }
+.work-audience__text {
+  max-width: var(--measure);
+  font-size: var(--fs-item);
+  line-height: var(--lh-intro);
+}
+/* 能做什么：编号加一句话，行间细线；句子开头的小标题加重 */
+.point {
+  display: grid;
+  grid-template-columns: 2.5em minmax(0, 1fr);
+  column-gap: var(--sp-3);
+  align-items: baseline;
+  padding-block: var(--sp-4);
+  border-top: 1px solid var(--line);
+}
+.point:first-child { padding-top: 0; border-top: 0; }
+.point__num { font-size: var(--fs-meta); color: var(--ink-3); }
+.point__text { max-width: 40em; color: var(--ink-2); }
+.point__lead { color: var(--ink); font-weight: 500; }
+/* 手机上（640px 以下）编号放到文字上面：文字从左边界排起，和正文同一条左线，不再被编号列挤窄
+   （和作品列表页手机上的编号一样放在条目上面）。平板和电脑照旧左边一列编号 */
+@media (max-width: 639.98px) {
+  .point { grid-template-columns: minmax(0, 1fr); row-gap: var(--sp-1); }
+  .point__num { line-height: var(--lh-meta); }
+}
+/* 获取方式：一种方式一行，行间细线 */
+.way {
+  padding-block: var(--sp-5);
+  border-top: 1px solid var(--line);
+}
+.way:first-child { padding-top: 0; border-top: 0; }
+.way__action,
+.way__title {
+  font-size: var(--fs-item);
+  line-height: var(--lh-title);
+  font-weight: 500;
+}
+.way__action {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 var(--sp-3);
+  min-height: 44px;
+}
+.way__action .icon { width: .7em; height: .7em; }
+.way__file { order: 1; flex-basis: 100%; font-size: .8em; font-weight: 400; }   /* 手机上文件名排到图标后面、另起一行 */
+.way-note { margin-top: var(--sp-2); max-width: var(--measure); color: var(--ink-2); }
+/* 下载说明里有一长段不带标点的分句，只在标点和空格处断会把“就是”单独留在行尾，这一条照常按字断 */
+.way-download .way-note { word-break: normal; }
+/* 代码块（安装命令、文章里的代码）：黑底；一行命令不折开，放不下时在框里横向滑动 */
+.code,
+.prose pre {
+  padding: var(--sp-4) var(--sp-5);
+  background: var(--ink);
+  color: var(--paper);
+  font-family: var(--font-mono);
+  font-size: var(--fs-meta);
+  line-height: 1.8;
+  white-space: pre;
+  overflow-x: auto;
+}
+/* 手机上（640px 以下）安装命令整条折行显示，不藏到框外（iOS 不显示滚动条，读者看不出还有半截）。
+   折行只是显示，复制出来还是原来的一行；文章里的代码块照旧横向滑动 */
+@media (max-width: 639.98px) {
+  .code { white-space: pre-wrap; overflow-wrap: anywhere; }
+}
+.code { margin-top: var(--sp-3); }
+.code code,
+.prose pre code { padding: 0; background: none; font: inherit; }
+.workbuddy-items { margin-top: var(--sp-4); }
+.workbuddy-items li {
+  padding-block: var(--sp-2);
+  border-bottom: 1px solid var(--line);
+}
+.workbuddy-items li:first-child { border-top: 1px solid var(--line); }
+.workbuddy-items__type { font-size: var(--fs-meta); color: var(--ink-3); }
+.license { margin-top: var(--sp-5); }
+.page-end { padding-bottom: var(--sp-8); }
+.back { color: var(--ink); font-weight: 500; }
+
+/* ---------- 播客页：黑色通栏的页头就是“怎么收听” ---------- */
+.masthead--band {
+  background: var(--band);
+  color: var(--band-ink);
+  padding-block: var(--band-space);
+  margin-bottom: var(--section-space);
+}
+.masthead--band .masthead__eyebrow { color: var(--band-ink-3); }
+.masthead--band .masthead__body { border-top-color: var(--band-ink); }
+.masthead--band .meta,
+.masthead--band .sep { color: var(--band-ink-3); }
+.listen .masthead__body { row-gap: var(--sp-5); }
+.listen__cover { width: 120px; }   /* 手机上 120px；原图 480px */
+.listen__host { margin-bottom: var(--sp-4); }
+.listen .lead { color: var(--band-ink); }
+.listen__actions { margin-top: var(--sp-6); }
+.listen__tips {
+  margin-top: var(--sp-6);
+  max-width: var(--measure);
+  color: var(--band-ink-2);
+}
+.listen__tips li {
+  padding-block: var(--sp-3);
+  border-top: 1px solid var(--band-line);
+}
+.listen__tips li:last-child { border-bottom: 1px solid var(--band-line); }
+.section__aside .dotplot { margin-top: var(--sp-6); max-width: 420px; }
+.rows--episodes .row__note { word-break: keep-all; }   /* 时长只在空格处折行：“1 小时 2 分钟”放不下时断成两行，不拆“分钟” */
+
+/* ---------- 关于页 ---------- */
+.about__text p + p { margin-top: var(--sp-4); }
+.about__text p:not(.lead) { max-width: var(--measure); color: var(--ink-2); }
+.find-me__issues { margin-top: var(--sp-5); max-width: var(--measure); color: var(--ink-2); }
+.about__site { max-width: var(--measure); color: var(--ink-2); }
+
+/* ---------- 404 ---------- */
+.hero--404 .hero__name { margin-left: -.015em; }   /* 数字 4 左侧留白比字母 E 少，偏移跟着改小，竖笔仍落在版心左线上 */
+.hero--404 .hero__lead { margin-top: var(--sp-4); }
+
+/* ---------- 博客：列表和文章 ---------- */
+.feed-link { margin-top: var(--sp-5); }
+.masthead--post .masthead__title {
+  font-size: var(--fs-title);
+  line-height: var(--lh-title);
+  max-width: 24em;
+}
+.masthead--post { padding-bottom: var(--sp-7); }
+.post-grid { border-top: 1px solid var(--ink); padding-top: var(--sp-6); padding-bottom: var(--section-space); }
+.prose { max-width: var(--measure); color: var(--ink); }
+.prose > * + * { margin-top: 1em; }
+.prose h2 { margin-top: 2em; font-size: var(--fs-name); line-height: var(--lh-title); }
+.prose h3 { margin-top: 1.6em; font-size: var(--fs-item); line-height: var(--lh-title); }
+.prose ul { list-style: disc; padding-left: 1.4em; }
+.prose ol { list-style: decimal; padding-left: 1.6em; }
+.prose li + li { margin-top: .4em; }
+.prose a { overflow-wrap: anywhere; }
+.prose blockquote { padding-left: var(--sp-4); border-left: 1px solid var(--ink); color: var(--ink-2); }
+.prose code { padding: .1em .3em; background: var(--paper-2); font-family: var(--font-mono); font-size: .875em; }
+.prose img { max-width: 100%; height: auto; }
+.prose hr { border: 0; border-top: 1px solid var(--line); }
+.prose table { border-collapse: collapse; font-size: var(--fs-meta); }
+.prose th, .prose td { padding: var(--sp-2) var(--sp-3); border-bottom: 1px solid var(--line); text-align: left; }
+
+/* ==========================================================================
+   平板（≥ 768px）：区块里开始分栏，二维码出现，红方块挂进左侧留白
+   ========================================================================== */
+@media (min-width: 768px) {
+  :root {
+    --page-pad: 32px;
+    --gutter: 24px;
+    --header-h: 64px;
+    --fs-title: 36px;
+    --fs-page: 72px;
+    --fs-display: clamp(200px, 24vw, 320px);
+  }
+  .site-nav a { padding-inline: var(--sp-3); }
+  .qr { display: block; }
+  .way__file { order: 0; flex-basis: auto; }
+
+  .hero__text { grid-column: 1 / 10; }
+  .hero__entries { grid-column: 1 / 9; }
+
+  /* 定位方块挂在文字左侧的留白里，让文字本身对齐网格线 */
+  .podcast__eyebrow .square,
+  .row__marker {
+    margin-left: calc(-1 * (var(--square-m) + var(--square-gap)));
+  }
+  .row__marker { display: inline-block; visibility: hidden; }
+  .row--latest .row__marker { visibility: visible; }
+
+  /* 作品：左边说明 8 栏，右边规格表 4 栏 */
+  .work {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    column-gap: var(--gutter);
+    row-gap: var(--sp-3);
+  }
+  .work__link { grid-column: 1 / 9; }
+  .work__aside { grid-column: 9 / 13; align-self: start; }
+
+  /* 首页播客：最新一期和二维码并排；封面和介绍并排；时长图在下面 */
+  .podcast__body {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    column-gap: var(--gutter);
+  }
+  .podcast__latest { grid-column: 1 / 9; }
+  .podcast__qr { grid-column: 9 / 13; }
+  .podcast__show {
+    grid-column: 1 / -1;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    column-gap: var(--gutter);
+    row-gap: var(--sp-3);
+    align-items: start;
+  }
+  .podcast__cover { grid-column: 1 / 4; grid-row: 1 / 3; }
+  .podcast__info { grid-column: 4 / 12; }
+  .podcast__desc { grid-column: 4 / 12; }
+  .podcast__chart { grid-column: 1 / 7; }
+
+  /* 列表的一行：日期、类型、标题排成一行 */
+  .row { grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--gutter); }
+  .row__when { grid-column: 1 / 4; }
+  .row__note { grid-column: 4 / 5; }
+  .row__title { grid-column: 5 / 13; }
+  .row__summary { grid-column: 5 / 13; }
+  .rows--posts .row__title { grid-column: 4 / 13; }
+  .rows--posts .row__summary { grid-column: 4 / 13; }
+  .rows--episodes .row__note { grid-column: 4 / 6; }   /* 单集的时长比“版本”“播客”长，给两栏 */
+  .rows--episodes .row__title { grid-column: 6 / 13; }
+
+  /* 栏目页页头 */
+  .work-page__lead { grid-column: 1 / 9; }
+  .work-page__facts { grid-column: 9 / 13; grid-row: 1 / 3; align-self: start; }
+  .work-visual { grid-column: 1 / 9; }
+
+  .listen__cover { grid-column: 1 / 4; width: 100%; }
+  .listen__main { grid-column: 4 / 13; }
+  .listen__qr { grid-column: 4 / 13; }
+
+  .about__text { grid-column: 1 / 10; }
+
+  .workbuddy-items {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: var(--gutter);
+  }
+  .workbuddy-items li:nth-child(2) { border-top: 1px solid var(--line); }
+
+  .footer__base { flex-direction: row; justify-content: space-between; align-items: baseline; }
+
+  /* 短段落几行之间长短均衡，末行不只剩两三个字；手机上不加，会把一行压短 */
+  .work__desc, .lead, .point__text, .hero__lead, .work-audience__text, .way-note, .podcast__desc { text-wrap: balance; }
+}
+
+/* ==========================================================================
+   电脑（≥ 960px）：12 栏网格，左 3 栏是“索引栏”，右 9 栏是内容
+   ========================================================================== */
+@media (min-width: 960px) {
+  :root {
+    --page-pad: 48px;
+    --header-h: 72px;
+    --fs-intro: 28px;
+    --fs-name: 28px;
+    --fs-page: 96px;
+    --fs-display: clamp(240px, 22vw, 320px);
+    --section-space: var(--sp-10);
+    --band-space: var(--sp-9);
+  }
+
+  /* 索引栏：区块编号和标题挂在左边 3 栏，滚动时停在顶部 */
+  .section__aside {
+    grid-column: 1 / 4;
+    grid-row: 1;
+    align-self: start;
+    position: sticky;
+    top: var(--sp-6);
+  }
+  .section__head { flex-direction: column; gap: var(--sp-2); }
+  .section__main { grid-column: 4 / 13; grid-row: 1; }
+
+  /* 首屏：两个入口放在索引栏，和下面各区块的编号对齐 */
+  .hero__body { row-gap: 0; }
+  .hero__entries {
+    grid-column: 1 / 4;
+    grid-row: 1;
+    grid-template-columns: 1fr;
+    align-self: start;
+  }
+  .hero__text { grid-column: 4 / 10; grid-row: 1; }
+
+  /* 作品：内容区 9 栏 = 说明 6 栏 + 规格表 3 栏 */
+  .work { grid-template-columns: repeat(9, minmax(0, 1fr)); }
+  .work__link { grid-column: 1 / 7; }
+  .work__aside { grid-column: 7 / 10; }
+
+  /* 首页播客：时长图挂在索引栏（编号下面）；内容区放最新一期、二维码、节目介绍 */
+  .podcast__grid { grid-template-rows: auto 1fr; }
+  .podcast .section__main { grid-row: 1 / 3; }
+  .podcast__chart { grid-column: 1 / 4; grid-row: 2; align-self: start; }
+  .podcast__body { grid-template-columns: repeat(9, minmax(0, 1fr)); }
+  .podcast__latest { grid-column: 1 / 7; }
+  .podcast__qr { grid-column: 7 / 10; }
+  .podcast__show { grid-template-columns: repeat(9, minmax(0, 1fr)); }
+  .podcast__cover { grid-column: 1 / 3; }
+  .podcast__info,
+  .podcast__desc { grid-column: 3 / 8; }
+
+  /* 列表的一行：日期 2 栏、类型 1 栏、标题 6 栏（内容区 9 栏） */
+  .row { grid-template-columns: repeat(9, minmax(0, 1fr)); }
+  .row__when { grid-column: 1 / 3; }
+  .row__note { grid-column: 3 / 4; }
+  .row__title,
+  .row__summary { grid-column: 4 / 10; }
+  .rows--posts .row__title,
+  .rows--posts .row__summary { grid-column: 3 / 10; }
+  .rows--episodes .row__note { grid-column: 3 / 4; }   /* 电脑上一栏放得下，和首页“最近更新”同一套栏 */
+  .rows--episodes .row__title { grid-column: 4 / 10; }
+
+  /* 栏目页页头：黑线下面同样分索引栏和内容栏 */
+  .masthead__facts,
+  .masthead__note { grid-column: 4 / 13; }
+  .work-page__facts { grid-column: 1 / 4; grid-row: 1 / 3; }
+  .work-page__lead,
+  .work-visual { grid-column: 4 / 13; }
+
+  .catalogue__index { grid-column: 1 / 4; grid-row: 1; }
+  .catalogue__item .work { grid-column: 4 / 13; grid-row: 1; }
+
+  .listen__cover { grid-column: 1 / 4; }
+  .listen__main { grid-column: 4 / 10; }
+  .listen__qr { grid-column: 10 / 13; }
+
+  .about__text { grid-column: 4 / 11; }
+
+  .post-body { grid-column: 4 / 11; }
+
+  /* 页脚底行：署名在索引栏，许可行在内容区 */
+  .footer__base {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    column-gap: var(--gutter);
+  }
+  .footer__mark { grid-column: 1 / 4; }
+  .footer__license { grid-column: 4 / 13; }
+}
+
+/* 区块标题在 1080px 以上才放大到 44px：再窄，索引栏（左 3 栏）放不下五个字的标题（“在哪找到我”），
+   会顶到右边的内容栏；1080 以下沿用平板的 36px */
+@media (min-width: 1080px) {
+  :root { --fs-title: 44px; }
+}
+
+/* ---------- 动效退让：系统开了“减少动态效果”就不做过渡和平滑滚动 ---------- */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { transition: none !important; }
+}

@@ -1,0 +1,105 @@
+[
+  {
+    "slug": "ai-analyst-workbench",
+    "name": "AI Analyst Workbench",
+    "nameZh": "分析师的 AI 工作台",
+    "summary": "一套装进 AI 助手 Claude Code 的技能和检查程序，让 AI 帮数据分析师写分析报告、做汇报片、核对交来的数据，而且每个数都能从数据一路核对到图上。",
+    "audience": "用 AI 写分析报告、做汇报的数据分析师和 BI 分析师，以及想让自己的 AI 助手“写的不审自己、数字能复核”的人。",
+    "highlights": [
+      "尽量不犯第二次：你纠正过的说法记进一张清单，由程序逐条检查。",
+      "数字可复核：数字只认程序从数据算出来的；交来的数据先核对是不是真的重跑过。",
+      "看得懂、讲得出：答案放在最前面，配术语表；交付前由两个只读的 AI 把关，一个像外行那样从头读一遍，一个看图、回数据源核对数字。",
+      "附两个从头走到尾的示例项目，数据全是虚构的，可以照着跑一遍。"
+    ],
+    "repo": "ai-analyst-workbench",
+    "repoId": 1424461350,
+    "license": "MIT",
+    "docsLicense": "CC BY 4.0",
+    "install": {
+      "claudeCode": [
+        "/plugin marketplace add Ethanyang9512/ai-analyst-workbench",
+        "/plugin install ethan-analyst@ethan-skills"
+      ]
+    },
+    "workbuddy": {
+      "items": [
+        { "id": "os_f78675ae7d39fe49", "name": "交付前对抗式审查", "type": "技能" },
+        { "id": "os_0eb3e2c9355087a8", "name": "可复核的分析交付", "type": "技能" },
+        { "id": "os_235e4171a2194c2d", "name": "数据包审核", "type": "技能" },
+        { "id": "os_5579334401233658", "name": "业务分析报告写作", "type": "技能" },
+        { "id": "os_f524dc2417c718fa", "name": "高管摘要", "type": "技能" },
+        { "id": "os_77a494cb9c78dd9c", "name": "答案先行的汇报骨架", "type": "技能" },
+        { "id": "os_c0e9a31906887acd", "name": "优化建模求解", "type": "技能" },
+        { "id": "os_dd7380db1eb7a176", "name": "分析开题五要素", "type": "技能" },
+        { "id": "oe_e540debba57a2824", "name": "商业分析师团队", "type": "专家团" }
+      ]
+    },
+    "status": "open-source",
+    "visual": {
+      "src": "/assets/img/workbench-architecture.svg",
+      "alt": "架构示意图：用户在飞书群里提需求，经第三方的桥转给分析助手，也就是 Claude Code 加上 AI Analyst Workbench 的执行流程、技能、钩子、两位验收员和检查程序；分析助手读写项目工作区和知识库，需求包经用户转交给取数助手，取数助手交回数据包。",
+      "caption": "你在飞书群里提需求，电脑上的 Claude Code 照这套工作台写报告、做汇报片，交付前先过检查，每个数都能核回数据。图里的桥，是把飞书群里的消息转给电脑上的 AI 的程序，用的是第三方的；不接飞书，也可以直接在终端里用。",
+      "width": 600,
+      "height": 561
+    }
+  },
+  {
+    "slug": "ai-creator-studio",
+    "name": "AI Creator Studio",
+    "nameZh": "播客创作者的 AI 工作室",
+    "summary": "一套给个人播客创作者用的 AI 技能：录音在自己电脑上降噪、剪辑、统一音量；一期节目的文字稿，交给一组 AI 编辑改成公众号长文、小红书笔记和节目单（Shownotes），再查文风、查事实。",
+    "audience": "自己录播客、写公众号、发小红书的个人创作者。",
+    "highlights": [
+      "播客剪辑与母带处理：降噪、剪掉首尾静音、把音量调到统一标准，导出 MP3；还会找出可以收紧的长停顿和说错重录的地方，你确认后再剪。",
+      "公众号排版导出：把写好的文稿（Markdown 格式）转成能直接粘进公众号编辑器的样子。",
+      "播客转图文编辑部：五个分工的 AI 编辑，写公众号长文、小红书笔记和 Shownotes；其中文风校对和事实核查两位只审不改。",
+      "几条底线：不替你发布，不编造节目里没说过的内容，原始录音只读，不生成也不克隆人声。"
+    ],
+    "repo": "ai-creator-studio",
+    "repoId": 1435078009,
+    "license": "MIT",
+    "docsLicense": "CC BY 4.0",
+    "install": {
+      "claudeCode": [
+        "/plugin marketplace add Ethanyang9512/ai-creator-studio",
+        "/plugin install ethan-creator@ethan-creator-skills"
+      ]
+    },
+    "workbuddy": {
+      "items": [
+        { "id": "os_1370dc939444042a", "name": "公众号排版导出", "type": "技能" }
+      ]
+    },
+    "status": "open-source",
+    "visual": {
+      "src": "/assets/img/creator-studio-workflow.svg",
+      "alt": "流程示意图：录音在自己电脑上经剪辑与母带处理，成片是 MP3；文字稿交给 AI 编辑部的五位编辑，改成公众号长文、小红书笔记和 Shownotes，其中文风校对和事实核查只审不改。",
+      "width": 600,
+      "height": 432
+    }
+  },
+  {
+    "slug": "dawn",
+    "name": "Dawn",
+    "nameZh": "微信里的个人 AI 助理",
+    "summary": "在微信里发一句话，电脑上的 AI 智能体就去干活，做完把结果发回微信。",
+    "audience": "目前只有我自己在用。",
+    "highlights": [
+      "人不在电脑前，用手机微信也能让电脑上的 AI 干活。",
+      "每天发日报、到点提醒，也能盯着公开信息的变化。",
+      "只听主人一个人的：只处理绑定的那个微信发来的消息，别人发的一律不理。",
+      "掉线、发不出消息或断网时，会弹通知提醒。"
+    ],
+    "repo": null,
+    "license": null,
+    "install": null,
+    "workbuddy": null,
+    "status": "private",
+    "visual": {
+      "src": "/assets/img/dawn-architecture.svg",
+      "alt": "示意图：在手机微信里发一句话，电脑上的本机桥只认主人，转给 AI 智能体干活，结果发回微信；掉线、发不出消息或断网时，弹通知提醒。",
+      "width": 600,
+      "height": 448
+    }
+  }
+]

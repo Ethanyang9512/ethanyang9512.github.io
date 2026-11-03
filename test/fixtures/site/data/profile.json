@@ -1,0 +1,20 @@
+{
+  "name": "Ethan",
+  "siteUrl": "https://fixture.example.invalid",
+  "tagline": "夹具一句话介绍：做数据分析，也做节目。",
+  "intro": "夹具简介：这里放我做的东西，一个给分析师，一个给创作者。",
+  "about": [
+    "夹具关于第一段：我是 Ethan。",
+    "夹具关于第二段：节目里署名弔导。",
+    "在 GitHub 和公众号「二手国王」能找到我。"
+  ],
+  "podcastIntro": "夹具节目简介。",
+  "podcastAuthor": "弔导",
+  "links": [
+    { "label": "GitHub", "url": "https://github.com/Ethanyang9512", "text": "Ethanyang9512" },
+    { "label": "小宇宙", "url": "https://www.xiaoyuzhoufm.com/podcast/fb0000000000000000000001", "text": "夹具节目" },
+    { "label": "公众号", "url": null, "text": "二手国王" }
+  ],
+  "xiaohongshu": null,
+  "license": "CC BY 4.0"
+}
