@@ -68,7 +68,8 @@
     "workbuddy": {
       "items": [
         { "id": "os_1370dc939444042a", "name": "公众号排版导出", "type": "技能" },
-        { "id": "oe_2da603d7e1ac6dee", "name": "播客转图文编辑部", "type": "专家团" }
+        { "id": "oe_2da603d7e1ac6dee", "name": "播客转图文编辑部", "type": "专家团" },
+        { "id": "os_16427ee648d23aad", "name": "播客剪辑与母带处理", "type": "技能" }
       ]
     },
     "status": "open-source",
