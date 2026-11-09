@@ -86,7 +86,8 @@ async function listFiles(dir, prefix = '') {
 // 读页面只看语义（链接地址、文字内容、属性），不对整段标记做字面匹配：换皮加 class 不影响
 const ENTITIES = { amp: '&', lt: '<', gt: '>', quot: '"', '#39': "'" };
 const decode = (s) => s.replace(/&(amp|lt|gt|quot|#39);/g, (_, e) => ENTITIES[e]);
-const textOf = (fragment) => decode(fragment.replace(/<[^>]*>/g, '')).trim();
+// 不换行的空格（分隔号后面那个）按普通空格读
+const textOf = (fragment) => decode(fragment.replace(/<[^>]*>/g, '')).replace(/\u00a0/g, ' ').trim();
 const attrsOf = (tag) => Object.fromEntries([...tag.matchAll(/([\w:-]+)="([^"]*)"/g)].map((m) => [m[1], decode(m[2])]));
 const tagsOf = (html, name) => [...html.matchAll(new RegExp(`<${name}\\b[^>]*>`, 'g'))].map((m) => attrsOf(m[0]));
 const linksIn = (html) => [...html.matchAll(/<a\b([^>]*)>([\s\S]*?)<\/a>/g)].map((m) => ({ ...attrsOf(m[1]), text: textOf(m[2]) }));
@@ -150,29 +151,46 @@ test('build refuses a non-empty output directory', async (t) => {
   assert.deepEqual([...pages].sort(), PAGES);
 });
 
-test('home page leads with the intro, then works, latest episode and recent updates', async () => {
+test('home page leads with the intro, then works, latest episode and contact', async () => {
   const { read } = await build();
   const html = await read('index.html');
   const body = html.slice(html.indexOf('<body'));
 
   assert.match(body, /Ethan/);
-  const at = ['intro', 'works', 'latest-episode', 'updates'].map((id) => sectionAt(body, id));
+  const at = ['intro', 'works', 'latest-episode', 'contact'].map((id) => sectionAt(body, id));
   assert.ok(at.every((i, k) => i >= 0 && (k === 0 || i > at[k - 1])), `区块顺序不对：${at}`);
+  // 没有博客时没有“文章”；“最近更新”和上面的作品、播客重复，不再有
+  assert.equal(sectionAt(body, 'posts'), -1);
+  assert.equal(sectionAt(body, 'updates'), -1);
 
+  // 首屏只有名字（一级标题）和一句话；不再有第二段简介和“看作品 / 听播客”两个入口（和导航重复）
   const intro = section(body, 'intro');
+  assert.equal(textOf(intro.match(/<h1\b[^>]*>([\s\S]*?)<\/h1>/)[1]), 'Ethan');
   assert.match(textOf(intro), /夹具一句话介绍/);
-  const entries = linksIn(intro).map((l) => `${l.href} ${l.text}`);
-  assert.ok(entries.includes('works/ 看作品') && entries.includes('podcast/ 听播客'), entries.join(' | '));
+  assert.doesNotMatch(textOf(body), /夹具简介/);
+  assert.deepEqual(linksIn(intro), []);
+  assert.equal(tagsOf(body, 'h1').length, 1);
 
+  // 作品：英文名、中文名、开没开源；不放规格表和长介绍
   const works = textOf(section(body, 'works'));
   const names = ['Alpha Kit', 'Beta Studio', 'Gamma Bot'].map((n) => works.indexOf(n));
   assert.ok(names[0] >= 0 && names[0] < names[1] && names[1] < names[2], `作品顺序不对：${names}`);
+  assert.match(works, /未开源/);
+  assert.doesNotMatch(works, /版本|发布|WorkBuddy|MIT/);
 
   const latest = hrefsIn(section(body, 'latest-episode'));
   assert.ok(latest.includes(EP3.url) && !latest.includes(EP2.url), latest.join(' '));
+  assert.ok(latest.includes('podcast/'), latest.join(' '));
+  // 小宇宙节目页只在联系方式里链一次，不在播客区块里再放一个
+  assert.ok(!latest.includes(PODCAST_URL), latest.join(' '));
+  assert.equal(hrefsIn(mainOf(html)).filter((h) => h === PODCAST_URL).length, 1);
+  // 时长图拿掉了
+  assert.doesNotMatch(textOf(body), /单集时长|最短|最长/);
 
-  // 单集和版本按日期倒序合并（没有博客时一共 5 条）
-  assert.deepEqual(hrefsIn(section(body, 'updates')), [EP3.url, 'works/alpha-kit/', EP2.url, 'works/beta-studio/', EP1.url]);
+  // 联系方式一行：平台名加账号名，只读文字的读者也看得到账号名
+  const contact = textOf(section(body, 'contact'));
+  assert.match(contact, /GitHub：Ethanyang9512/);
+  assert.match(contact, /公众号：二手国王/);
 });
 
 test('podcast page reports missing episodes honestly', async () => {
@@ -210,7 +228,11 @@ test('podcast page offers simple ways to listen', async () => {
   assert.match(textOf(page), /2026-02-16/);
   assert.match(textOf(page), /1 小时 2 分钟/);
 
-  assert.ok(textsFor(PODCAST_URL).includes('在小宇宙收听全部节目'), textsFor(PODCAST_URL).join(' | '));
+  assert.ok(textsFor(PODCAST_URL).includes('在小宇宙收听'), textsFor(PODCAST_URL).join(' | '));
+  // 收听说明、时长图、标题上方和导航重复的“播客”小字都拿掉了
+  assert.doesNotMatch(textOf(page), /点下面任意一期的标题|单集时长|最短/);
+  assert.equal(textOf(page.match(/<h1\b[^>]*>([\s\S]*?)<\/h1>/)[1]), '夹具节目');
+  assert.doesNotMatch(textOf(page.slice(0, page.indexOf('<h1'))), /播客/);
 
   const qr = tagsOf(page, 'img').find((img) => img.src?.endsWith('podcast-qr.svg'));
   assert.ok(qr, '没有扫码图');
@@ -251,6 +273,21 @@ test('every page names its build in a generator meta', async (t) => {
   const head = git('rev-parse', '--short', 'HEAD');
   assert.match(head, /^[0-9a-f]{7,}$/);
   assert.deepEqual(new Set(await generators(await buildFrom(rootDir))), new Set([`site-build ${head}`]));
+});
+
+// 站外的监控按下面两条规则读线上页面：首页的版本标记、sitemap 里的 <loc>。
+// 改版时这两处写法不能变，不然监控会天天报“读不出版本”。规则和监控那边一字不差，要改两边一起改。
+const MONITOR_GENERATOR = /<meta name="generator" content="site-build ([^"<>]*)">/;
+const MONITOR_LOC = /<loc>\s*([^<]*?)\s*<\/loc>/g;
+
+test('the home page version marker and the sitemap keep the exact format the monitor reads', async () => {
+  const { read } = await build();
+  const m = (await read('index.html')).match(MONITOR_GENERATOR);
+  assert.ok(m, '首页的版本标记要能被监控的规则原样读出');
+  assert.ok(m[1].length > 0);
+  const locs = [...(await read('sitemap.xml')).matchAll(MONITOR_LOC)].map((x) => x[1]);
+  assert.ok(locs.includes(`${SITE_URL}/`), 'sitemap 里要有首页');
+  assert.ok(locs.length > 1);
 });
 
 test('nav marks the current page and the current section', async () => {
@@ -381,10 +418,13 @@ test('held.json lists that are missing count as empty and unknown keys are ignor
 test('private work page has no download, GitHub link or ways to get it', async () => {
   const { read } = await build();
   const html = await read('works/gamma-bot/index.html');
-  assert.match(textOf(mainOf(html)), /暂未开源/);
-  // 状态只写在规格表里，不另起一块只有“暂未开源”四个字的“获取方式”，页头也没有跳过去的链接
+  assert.match(textOf(mainOf(html)), /未开源/);
+  // 未开源写在页头副标题里（读者一进来就知道拿不到），页底不再重复一行
+  assert.match(textOf(mainOf(html).match(/<p class="page-head__sub">([\s\S]*?)<\/p>/)[1]), /· 未开源$/);
+  assert.doesNotMatch(mainOf(html), /work-meta/);
+  // 状态写在页底那一行，不另起一块只有“未开源”的“怎么装”，页头也没有跳过去的链接
   assert.equal(sectionAt(html, 'get'), -1);
-  assert.doesNotMatch(textOf(mainOf(html)), /获取方式/);
+  assert.doesNotMatch(textOf(mainOf(html)), /获取方式|怎么装/);
   assert.ok(!hrefsIn(mainOf(html)).includes('#get'));
   assert.doesNotMatch(html, /github\.com/);
   assert.doesNotMatch(html, /\.zip|downloads\//);
@@ -399,28 +439,33 @@ test('work page shows only the ways to get it that exist, quickest first', async
   const alphaText = textOf(alphaGet);
   assert.ok(hrefsIn(alphaGet).includes('https://github.com/Ethanyang9512/alpha-kit'));
   assert.ok(hrefsIn(alphaGet).includes(ALPHA_ZIP));
-  // 先说要装好 Claude Code 再给命令；WorkBuddy 先说它是什么再列名字；最后才是看源码和下载源码包
+  // 先说要装好 Claude Code 再给命令；再一句“也可以在 WorkBuddy 里搜名字”加名单；最后才是源码和源码包
   const order = [
-    '装进 Claude Code',
     '先装好 Anthropic 的 AI 编程助手 Claude Code',
     '/plugin marketplace add Ethanyang9512/alpha-kit',
-    '在 WorkBuddy 安装',
-    'WorkBuddy 是腾讯的 AI 客户端',
+    '也可以在腾讯 WorkBuddy 里搜名字安装',
     '夹具技能一',
-    '在 GitHub 看源码',
+    'GitHub 源码',
     '下载源码包',
-    '下载后照包里的 README 安装',
   ].map((s) => alphaText.indexOf(s));
   assert.ok(order.every((i, k) => i >= 0 && (k === 0 || i > order[k - 1])), `顺序不对：${order}`);
   assert.match(alphaText, /夹具技能一\s*（技能）/);
-  assert.match(alphaText, /夹具专家团\s*（专家团）/);
-  // 有专家团才提专家团在专家市场
-  assert.match(alphaText, /专家团在专家市场里/);
-  assert.ok(alphaText.includes('许可：代码 MIT、文档 CC BY 4.0'), alphaText);
+  assert.match(alphaText, /夹具专家团\s*（专家团，在专家市场）/);
+  // 源码包后面不再跟一句解释
+  assert.doesNotMatch(alphaText, /下载后照包里的 README 安装/);
+  assert.equal(textOf(section(alphaMain, 'get').match(/<h2\b[^>]*>([\s\S]*?)<\/h2>/)[1]), '怎么装');
   assert.deepEqual(tagsOf(alphaMain, 'img'), []); // visual.src 为 null 时不出图
-  // 页头规格表旁：跳到本页获取方式的链接
-  const alphaHead = alphaMain.slice(0, sectionAt(alphaMain, 'audience'));
-  assert.ok(linksIn(alphaHead).some((l) => l.href === '#get' && l.text === '获取方式'), hrefsIn(alphaHead).join(' '));
+  // 版本、日期、许可并成页底一行，规格表和页头的跳转、源码链接都不再有（源码链接只在“怎么装”里出现一次）
+  const meta = textOf(alphaMain.match(/<p class="work-meta[^"]*">([\s\S]*?)<\/p>/)[1]);
+  assert.ok(meta.startsWith('v1.2.0 · '), meta);
+  assert.match(meta, / · \d{4}-\d{2}-\d{2} 发布 · /);
+  assert.ok(meta.endsWith('代码 MIT、文档 CC BY 4.0'), meta);
+  assert.ok(alphaMain.indexOf('work-meta') > sectionAt(alphaMain, 'get'));
+  assert.ok(!hrefsIn(alphaMain).includes('#get'));
+  assert.equal(hrefsIn(alphaMain).filter((h) => h === 'https://github.com/Ethanyang9512/alpha-kit').length, 1);
+  assert.doesNotMatch(textOf(alphaMain), /状态|作品 01|01 \/ 03|许可：/);
+  // 适合谁不另起一块，也不单独写一句（开头那句介绍已经说了给谁用）
+  assert.equal(sectionAt(alphaMain, 'audience'), -1);
 
   const betaMain = mainOf(await read('works/beta-studio/index.html'));
   const betaGet = section(betaMain, 'get');
@@ -428,7 +473,7 @@ test('work page shows only the ways to get it that exist, quickest first', async
   assert.ok(hrefsIn(betaGet).includes(BETA_ZIP));
   assert.doesNotMatch(textOf(betaGet), /WorkBuddy|\/plugin|Claude Code/);
   // 只有一个许可证：写它的名字
-  assert.match(textOf(betaGet), /许可：MIT$/);
+  assert.match(textOf(betaMain.match(/<p class="work-meta[^"]*">([\s\S]*?)<\/p>/)[1]), /MIT 许可证$/);
   assert.deepEqual(
     tagsOf(betaMain, 'img').map((img) => [img.src, img.alt]),
     [['../../assets/img/fixture-beta.svg', '夹具示意图乙']],
@@ -438,37 +483,47 @@ test('work page shows only the ways to get it that exist, quickest first', async
   assert.equal(textOf(figure.match(/<figcaption\b[^>]*>([\s\S]*?)<\/figcaption>/)?.[1] ?? ''), '夹具图注乙：说清这张图讲什么。');
 });
 
-test('WorkBuddy is explained where it is listed; expert teams come up only when there is one', async () => {
-  const definition = /WorkBuddy 是腾讯的 AI 客户端，技能在它的技能市场里/;
-  const { read } = await build();
-  // 作品列表页：汇总那一行下面就有一句定义
-  const works = textOf(mainOf(await read('works/index.html')));
-  assert.ok(works.indexOf('WorkBuddy 已公开 2 项') >= 0 && works.search(definition) > works.indexOf('WorkBuddy 已公开 2 项'), works);
-  assert.match(works, /专家团在专家市场里/);
+test('WorkBuddy comes up once, in one line where its items are listed', async () => {
+  const { outDir, read } = await build();
+  // 不再有那段长解释，也不在作品列表页汇总
+  for (const f of htmlFiles(await listFiles(outDir))) {
+    assert.doesNotMatch(textOf(mainOf(await read(f))), /WorkBuddy 是腾讯的 AI 客户端|WorkBuddy 已公开/, f);
+  }
+  assert.doesNotMatch(textOf(mainOf(await read('works/index.html'))), /WorkBuddy/);
+  const text = textOf(section(mainOf(await read('works/alpha-kit/index.html')), 'get'));
+  assert.equal(text.match(/WorkBuddy/g).length, 1);
 
-  // 只有技能、没有专家团：两处都不提专家团和专家市场
+  // 没有 Claude Code 命令、只有 WorkBuddy：不写“也可以”
   const rootDir = await makeRoot();
   const file = join(rootDir, 'data/works.json');
   const data = JSON.parse(await readFile(file, 'utf8'));
-  data[0].workbuddy.items = data[0].workbuddy.items.filter((i) => i.type === '技能');
+  data[0].install = null;
   await writeFile(file, JSON.stringify(data));
-  const skillsOnly = await buildFrom(rootDir);
-  for (const page of ['works/index.html', 'works/alpha-kit/index.html']) {
-    const text = textOf(mainOf(await skillsOnly.read(page)));
-    assert.match(text, definition, page);
-    assert.doesNotMatch(text, /专家团|专家市场/, page);
-  }
+  const only = textOf(section(mainOf(await (await buildFrom(rootDir)).read('works/alpha-kit/index.html')), 'get'));
+  assert.match(only, /^怎么装\s*在腾讯 WorkBuddy 里搜名字安装：/);
 });
 
-test('open works state both licenses where they have two', async () => {
+test('lists say open or not; the work page states both licenses where there are two', async () => {
   const { read } = await build();
-  for (const page of ['index.html', 'works/index.html', 'works/alpha-kit/index.html']) {
-    assert.ok(textOf(mainOf(await read(page))).includes('已开源，代码 MIT、文档 CC BY 4.0'), page);
+  // 作品列表页每条多一句介绍，首页不加（两处各有分工，不逐字重复）
+  const fixtureWorks = JSON.parse(await readFile(join(FIXTURE, 'data/works.json'), 'utf8'));
+  const worksText = textOf(mainOf(await read('works/index.html')));
+  const homeText = textOf(mainOf(await read('index.html')));
+  for (const w of fixtureWorks) {
+    assert.ok(worksText.includes(w.summary), w.slug);
+    assert.ok(!homeText.includes(w.summary), w.slug);
   }
-  assert.match(textOf(mainOf(await read('works/beta-studio/index.html'))), /已开源，MIT 许可证/);
+  for (const page of ['index.html', 'works/index.html']) {
+    const text = textOf(mainOf(await read(page)));
+    assert.match(text, /Alpha Kit\s*夹具[^\n]*· 已开源/, page);
+    // 列表里不写许可证（许可证只在作品页页底）
+    for (const word of ['MIT', '4.0']) assert.ok(!text.includes(word), `${page}: ${word}`);
+  }
+  assert.ok(textOf(mainOf(await read('works/alpha-kit/index.html'))).includes('代码 MIT、文档 CC BY 4.0'));
+  assert.match(textOf(mainOf(await read('works/beta-studio/index.html'))), /MIT 许可证/);
 });
 
-test('about page says where to find me, where to report problems and what this site is', async () => {
+test('about page says where to find me and where to report problems; the license is one line in the footer', async () => {
   const { read } = await build();
   const main = mainOf(await read('about/index.html'));
   const findMe = section(main, 'find-me');
@@ -482,21 +537,26 @@ test('about page says where to find me, where to report problems and what this s
     hrefsIn(findMe).filter((h) => h.endsWith('/issues')),
     ['https://github.com/Ethanyang9512/alpha-kit/issues', 'https://github.com/Ethanyang9512/beta-studio/issues'],
   );
-  // 这个网站：放什么、怎么更新、文字的许可
-  const thisSite = textOf(section(main, 'this-site'));
-  for (const fact of ['以后也放博客', '每天自动从小宇宙和 GitHub 同步一次', 'CC BY 4.0', '署名 Ethan']) {
-    assert.ok(thisSite.includes(fact), `${fact}：${thisSite}`);
+  // “这个网站”一节（讲网站自己怎么运作）拿掉了；开头那句“在 GitHub 和公众号……能找到我”也不再重复
+  assert.equal(sectionAt(main, 'this-site'), -1);
+  assert.doesNotMatch(textOf(main), /每天自动从小宇宙和 GitHub 同步|能找到我/);
+  // 许可：每页页脚一句，封面除外必须写明，代码 MIT 也要有
+  const { outDir, read: readAll } = await build({ withPost: true });
+  for (const f of htmlFiles(await listFiles(outDir))) {
+    const html = await readAll(f);
+    const footer = textOf(html.slice(html.indexOf('<footer'), html.indexOf('</footer>')));
+    assert.equal(footer, '© Ethan · 文字和自绘示意图 CC BY 4.0（播客封面除外） · 本站代码 MIT', f);
+    // 手机上折行时“除外”不拆开，分隔号跟着下一项走、不挂在行尾
+    assert.match(html, /<span class="nobr">（播客封面除外）<\/span>/, f);
   }
-  // 有了博客就不再说“以后”
-  const withPost = textOf(section(mainOf(await (await build({ withPost: true })).read('about/index.html')), 'this-site'));
-  assert.doesNotMatch(withPost, /以后也放博客/);
-  assert.match(withPost, /博客/);
 });
 
-test('duration chart shows the shortest and longest episode as text', async () => {
-  const { read } = await build();
-  for (const page of ['index.html', 'podcast/index.html']) {
-    assert.match(plainText(await read(page)), /最短 25 分钟 · 最长 1 小时 2 分钟/, page);
+test('no duration chart, section numbers or update feed are left on any page', async () => {
+  const { outDir, read } = await build({ withPost: true });
+  for (const f of htmlFiles(await listFiles(outDir))) {
+    const html = await read(f);
+    assert.doesNotMatch(html, /dotplot|section__num|point__num|hero__entries|class="spec"|work-visual__hint/, f);
+    assert.doesNotMatch(plainText(html), /单集时长|最近更新|左右滑动看全图/, f);
   }
 });
 
@@ -504,11 +564,12 @@ test('listed words are kept on one line without changing the text', async () => 
   assert.equal(keep('一个给个人播客创作者'), '<span class="nobr">一个</span>给<span class="nobr">个人</span>播客创作者');
   assert.equal(keep('开源在 GitHub 上 & <b>'), '开源在 <span class="nobr">GitHub 上</span> &amp; &lt;b&gt;');
   assert.equal(keep('没有要包的词'), '没有要包的词');
-  // 首页导语里的两个“一个”都包上了，读成纯文字还是原句
+  // 播客页那句里的“公众号”包上了，读成纯文字还是原句
   const { read } = await build();
-  const lead = (await read('index.html')).match(/<p class="hero__lead">([\s\S]*?)<\/p>/)[1];
-  assert.equal((lead.match(/<span class="nobr">一个<\/span>/g) ?? []).length, 2);
-  assert.equal(textOf(lead), '夹具简介：这里放我做的东西，一个给分析师，一个给创作者。');
+  const page = mainOf(await read('podcast/index.html'));
+  const tip = page.match(/<p>(部分单集[\s\S]*?)<\/p>/)[1];
+  assert.equal((tip.match(/<span class="nobr">公众号<\/span>/g) ?? []).length, 1);
+  assert.equal(textOf(tip), '部分单集有文字版，发在公众号「二手国王」。');
 });
 
 test('with downloads the zips are saved and linked from the site', async (t) => {
@@ -716,17 +777,15 @@ test('site loads nothing from other sites', async () => {
 
 test('work diagram scrolls sideways on phones, big enough that its smallest text is 14px', async () => {
   const { read } = await build();
-  // 标记：图在能用键盘聚焦的容器里；提示在容器下面、图注上面，读屏不念；没有示意图的作品页没有这一块
+  // 标记：图在能用键盘聚焦的容器里，图注在容器下面；不再写“左右滑动看全图”；没有示意图的作品页没有这一块
   const beta = mainOf(await read('works/beta-studio/index.html'));
   const figure = beta.match(/<figure class="work-visual">[\s\S]*?<\/figure>/)?.[0] ?? '';
   const box = /<div class="work-visual__scroll"([^>]*)>([\s\S]*?)<\/div>/.exec(figure);
   assert.ok(box, '示意图没放进滑动容器');
   assert.equal(attrsOf(box[1]).tabindex, '0');
   assert.deepEqual(tagsOf(box[2], 'img').map((img) => img.src), ['../../assets/img/fixture-beta.svg']);
-  const hint = /<p class="work-visual__hint"([^>]*)>([^<]*)<\/p>/.exec(figure);
-  assert.equal(hint?.[2], '左右滑动看全图');
-  assert.equal(attrsOf(hint[1])['aria-hidden'], 'true');
-  const order = ['work-visual__scroll', 'work-visual__hint', '<figcaption'].map((part) => figure.indexOf(part));
+  assert.doesNotMatch(figure, /work-visual__hint|左右滑动/);
+  const order = ['work-visual__scroll', '<figcaption'].map((part) => figure.indexOf(part));
   assert.ok(order.every((i, k) => i >= 0 && (k === 0 || i > order[k - 1])), `顺序不对：${order}`);
   assert.doesNotMatch(await read('works/alpha-kit/index.html'), /work-visual/);
 
@@ -739,22 +798,71 @@ test('work diagram scrolls sideways on phones, big enough that its smallest text
     minWidth = Math.max(minWidth, Math.ceil((14 * canvas) / smallest));
   }
   const css = await read('assets/site.css');
-  const narrow = /@media \(max-width: ([\d.]+)px\) \{\s*\.work-visual__scroll \{ overflow-x: auto; \}\s*\.work-visual__scroll img \{ min-width: (\d+)px; \}\s*\.work-visual__hint \{ display: block; \}\s*\}/.exec(css);
-  assert.ok(narrow, '窄屏的滑动容器、最小宽度和提示的样式不见了');
+  const narrow = /@media \(max-width: ([\d.]+)px\) \{\s*\.work-visual__scroll \{ overflow-x: auto; \}\s*\.work-visual__scroll img \{ min-width: (\d+)px; \}\s*\}/.exec(css);
+  assert.ok(narrow, '窄屏的滑动容器和最小宽度的样式不见了');
   assert.equal(Number(narrow[2]), minWidth, '图的最小宽度要让最小的字不小于 14px，也不要更宽');
-  // 容器放得下最小宽度（视口 = 最小宽度加两边各 20px 页边）就不用滑动，窄屏的样式（含提示）到那里为止
+  // 容器放得下最小宽度（视口 = 最小宽度加两边各 20px 页边）就不用滑动，窄屏的样式到那里为止
   assert.equal(Number(narrow[1]), minWidth + 2 * 20 - 0.02);
-  // 其余宽度提示是藏着的
-  assert.match(css, /\.work-visual__hint \{\s*display: none;/);
   // 容器不比图宽（图最宽 600px）：宽屏上键盘聚焦的红框只框住图，不框一片空白
   assert.match(css, /\.work-visual img \{ width: 100%; max-width: 600px; \}\s*(?:\/\*[^*]*\*\/\s*)?\.work-visual__scroll \{ max-width: 600px; \}/);
 });
 
-test('on phones the numbers of the points list sit above the text and the text starts at the page edge', async () => {
-  const css = await (await build()).read('assets/site.css');
-  // 平板和电脑照旧左边一列编号
-  assert.match(css, /\.point \{\s*display: grid;\s*grid-template-columns: 2\.5em minmax\(0, 1fr\);/);
-  assert.match(css, /@media \(max-width: 639\.98px\) \{\s*\.point \{ grid-template-columns: minmax\(0, 1fr\); row-gap: var\(--sp-1\); \}/);
+test('points have no numbers; the lead-in is bold only when every point has one', async () => {
+  const { read } = await build();
+  const boldOf = async (f) => {
+    const points = section(mainOf(await read(f)), 'highlights');
+    assert.doesNotMatch(textOf(points), /\b0\d\b/, f);
+    const items = [...points.matchAll(/<li class="point">([\s\S]*?)<\/li>/g)].map((m) => m[1]);
+    assert.ok(items.length > 0, f);
+    return items.map((i) => /<span class="point__lead">[^<]*：<\/span>/.test(i));
+  };
+  // 甲：每条都有“小标题：”，全加粗；丙：有的有有的没有，全不加粗；乙：都没有
+  assert.deepEqual(await boldOf('works/alpha-kit/index.html'), [true, true]);
+  assert.deepEqual(await boldOf('works/gamma-bot/index.html'), [false, false]);
+  assert.deepEqual(await boldOf('works/beta-studio/index.html'), [false]);
+  // 加粗了的那句，读成纯文字还是原句
+  assert.match(textOf(section(mainOf(await read('works/alpha-kit/index.html')), 'highlights')), /小标题甲：夹具甲亮点一。/);
+
+  // 没有要点的作品：不出一个空的“能做什么”
+  const rootDir = await makeRoot();
+  const file = join(rootDir, 'data/works.json');
+  const data = JSON.parse(await readFile(file, 'utf8'));
+  data[1].highlights = [];
+  await writeFile(file, JSON.stringify(data));
+  const empty = mainOf(await (await buildFrom(rootDir)).read('works/beta-studio/index.html'));
+  assert.equal(sectionAt(empty, 'highlights'), -1);
+  assert.doesNotMatch(textOf(empty), /能做什么/);
+});
+
+test('no work page has a separate "who it is for" line, open or not', async () => {
+  const { read } = await build();
+  for (const f of ['works/alpha-kit/index.html', 'works/beta-studio/index.html', 'works/gamma-bot/index.html']) {
+    const text = textOf(mainOf(await read(f)));
+    assert.doesNotMatch(text, /适合/, f);
+    assert.doesNotMatch(text, /夹具作品.适合的人|目前只有我自己在用/, f);
+  }
+});
+
+test('every page has exactly one h1 and headings never skip a level', async () => {
+  const { outDir, read } = await build({ withPost: true });
+  for (const f of htmlFiles(await listFiles(outDir))) {
+    const levels = [...mainOf(await read(f)).matchAll(/<h([1-6])\b/g)].map((m) => Number(m[1]));
+    assert.equal(levels.filter((n) => n === 1).length, 1, `${f}：${levels}`);
+    assert.equal(levels[0], 1, `${f}：${levels}`);
+    levels.forEach((n, i) => {
+      if (i > 0) assert.ok(n <= levels[i - 1] + 1, `${f} 标题跳级：${levels}`);
+    });
+  }
+
+  // 文章正文里写了 # 和 ##：整体降一级，标题还是唯一的一级标题
+  const rootDir = await makeRoot();
+  await writeFile(join(rootDir, 'content/blog/headings.md'), '---\ntitle: 夹具标题层级\ndate: 2026-03-02\nslug: fixture-headings\n---\n\n# 正文一级\n\n段落。\n\n## 正文二级\n\n段落。\n');
+  const post = mainOf(await (await buildFrom(rootDir)).read('blog/fixture-headings/index.html'));
+  assert.deepEqual([...post.matchAll(/<h([1-6])\b[^>]*>([\s\S]*?)<\/h\1>/g)].map((m) => [Number(m[1]), textOf(m[2])]), [
+    [1, '夹具标题层级'],
+    [2, '正文一级'],
+    [3, '正文二级'],
+  ]);
 });
 
 test('Chinese quotes, middle dot, dash and ellipsis use local fonts and nothing is downloaded', async () => {
@@ -780,8 +888,22 @@ test('Chinese quotes, middle dot, dash and ellipsis use local fonts and nothing 
   assert.doesNotMatch(/--font-mono:[^;]*;/.exec(css)[0], /CJK Punct/);
 });
 
+test('a separator always travels with the item after it', async () => {
+  const { outDir, read } = await build({ withPost: true });
+  for (const f of htmlFiles(await listFiles(outDir))) {
+    const html = await read(f);
+    for (const m of html.matchAll(/<span class="sep" aria-hidden="true">·<\/span>(.)/g)) assert.equal(m[1], '\u00a0', f);
+  }
+});
+
 test('llms.txt keeps every link intact', async () => {
   const llms = await (await build({ withPost: true })).read('llms.txt');
+  // 播客说清是谁的；有 WorkBuddy 项目的作品提一句；最后是在哪找到我（公众号没有网址，写成一句话）
+  assert.match(llms, /Ethan 的播客，署名弔导。/);
+  assert.match(llms, /\(https:\/\/fixture\.example\.invalid\/works\/alpha-kit\/\): [^\n]*也可以在腾讯 WorkBuddy 里搜名字安装。/);
+  assert.doesNotMatch(llms.split('\n').find((l) => l.includes('/works/beta-studio/')), /WorkBuddy/);
+  assert.match(llms, /## 在哪找到我\n\n- \[GitHub\]\(https:\/\/github\.com\/Ethanyang9512\): Ethanyang9512\n/);
+  assert.match(llms, /\n公众号：微信里搜索「二手国王」。\n/);
   // 标题里的方括号要转义，不然 Markdown 链接会断
   assert.ok(llms.includes(`- [Vol.01 夹具第一期 \\[上\\]](${EP1.url}): `), llms);
   const items = llms.split('\n').filter((line) => line.startsWith('- '));
@@ -831,14 +953,11 @@ test('blog appears only when there are posts', async () => {
   assert.ok(hrefsIn(mainOf(await read('blog/index.html'))).includes('fixture-first-post/'));
   assert.ok((await read('sitemap.xml')).includes(`<loc>${SITE_URL}/blog/fixture-first-post/</loc>`));
   assert.ok((await read('llms.txt')).includes(`## 博客\n\n- [夹具博客：A & B](${SITE_URL}/blog/fixture-first-post/)`));
-  // 最近更新里有博客，合并后只取前 5 条
-  assert.deepEqual(hrefsIn(section(await read('index.html'), 'updates')), [
-    EP3.url,
-    'blog/fixture-first-post/',
-    'works/alpha-kit/',
-    EP2.url,
-    'works/beta-studio/',
-  ]);
+  // 首页“文章”在作品前面：最新的文章，加一个去博客的链接
+  const home = await read('index.html');
+  assert.deepEqual(hrefsIn(section(home, 'posts')), ['blog/fixture-first-post/', 'blog/']);
+  assert.ok(sectionAt(home, 'posts') > sectionAt(home, 'intro') && sectionAt(home, 'posts') < sectionAt(home, 'works'));
+  assert.equal(textOf(section(home, 'posts').match(/<h2\b[^>]*>([\s\S]*?)<\/h2>/)[1]), '文章');
 
   // feed.xml 是合法的 RSS 2.0
   const feed = await read('blog/feed.xml');
@@ -944,8 +1063,8 @@ test('read as plain text, side-by-side words do not run together', async () => {
       }
     }
   }
-  // 首页最新一期：日期和时长之间有空格
-  assert.match(plainText(await read('index.html')), /2026-03-15 25 分钟/);
+  // 首页最新一期：日期和时长之间有分隔符和空格
+  assert.match(plainText(await read('index.html')), /2026-03-15 · 25 分钟/);
 });
 
 // 按字节找图片里的元数据，不加依赖。JPEG：SOS 之前的 APP1 段（Exif、XMP 都放在这里）；

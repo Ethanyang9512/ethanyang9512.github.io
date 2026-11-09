@@ -57,7 +57,7 @@ lib/                 读数据、渲染页面、生成 llms.txt / sitemap / RSS
 scripts/             同步脚本（小宇宙、GitHub 版本）和构建时取源码包
 data/                全部内容数据（JSON）
 content/blog/        已发布的博客
-assets/              样式和图片，原样复制到输出；img/share.png 是分享卡的图（1200×630，照首页首屏的样子截的静态图，首页的大字或配色改了要重做）
+assets/              样式和图片，原样复制到输出；img/share.png 是分享卡的图（1200×630 的静态图：名字、一句介绍和网址，和首页首屏一个样子；首页的介绍或配色改了要重做）
 test/                测试，夹具全是手写的假数据
 .github/workflows/   同步和部署工作流
 ```
