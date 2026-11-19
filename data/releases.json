@@ -1,12 +1,12 @@
 {
-  "checkedAt": "2026-11-10T04:06:36.909Z",
+  "checkedAt": "2026-11-19T03:26:11.505Z",
   "repos": {
     "ai-analyst-workbench": {
-      "tag": "v0.3.0",
-      "name": "v0.3.0：故事线清单、诊断专题骨架、需求写细",
-      "publishedAt": "2026-11-09T09:05:27.000Z",
-      "zipUrl": "https://github.com/Ethanyang9512/ai-analyst-workbench/archive/refs/tags/v0.3.0.zip",
-      "zipName": "ai-analyst-workbench-0.3.0.zip"
+      "tag": "v0.4.0",
+      "name": "v0.4.0：动笔前先答四个问题、选图、汇报片的讲法",
+      "publishedAt": "2026-11-18T12:07:08.000Z",
+      "zipUrl": "https://github.com/Ethanyang9512/ai-analyst-workbench/archive/refs/tags/v0.4.0.zip",
+      "zipName": "ai-analyst-workbench-0.4.0.zip"
     },
     "ai-creator-studio": {
       "tag": "v0.1.0",
